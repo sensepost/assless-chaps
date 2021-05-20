@@ -12,6 +12,7 @@ It requires a hash database, instructions on how to make these are available bel
 Here is the comparison for three sample challenge/response's and two different wordlists, one a smaller private one, and the other the large Have I Been Pwned list. These were done on my Macbook Pro 2016 on battery. Hash 3 was deliberately placed at the end of each hash list to check for worst case performance. Hashcat is using CPU optimised cracking (because it has a faster startup time than the GPU kernel).
 
 *Hash1*
+
 Small hashlist:
 ```
 hashcat 1.53s user 0.16s system 25% cpu 6.699 total (3767.8 kH/s)
@@ -24,6 +25,7 @@ assless 0.37s user 0.06s system 3% cpu 10.990 total
 ```
 
 *Hash 2*
+
 Small hashlist:
 ```
 hashcat 1.66s user 0.20s system 24% cpu 7.547 total (3730.5 kH/s)
@@ -36,6 +38,7 @@ assless 0.29s user 0.06s system 3% cpu 9.119 total
 ```
 
 *Hash 3*
+
 Small hashlist:
 ```
 hashcat 3.09s user 0.25s system 48% cpu 6.834 total (3670.5 kH/s)
