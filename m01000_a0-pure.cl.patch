@@ -1,0 +1,46 @@
+--- m01000_a0-pure.cl	2021-05-13 20:33:44.000000000 +0200
++++ m01000_a0-pure.cl	2021-05-19 16:44:33.000000000 +0200
+@@ -16,6 +16,25 @@
+ #include "inc_hash_md4.cl"
+ #endif
+ 
++void print_hash(const u32 r0, const u32 r1, const u32 r2, const u32 r3)
++{
++  // Convert to vector to switch endianess
++  uchar4 x0 = as_uchar4(r0).wzyx;
++  uchar4 x1 = as_uchar4(r1).wzyx;
++  uchar4 x2 = as_uchar4(r2).wzyx;
++  uchar4 x3 = as_uchar4(r3).wzyx;
++
++  // Print all generated hashes
++  //printf("%02x%02x%02x%02x\n", x0, x3, x2, x1);
++
++  // Print all generated hashes in .csv
++  // last_twobytes, first_chunk, second_chunk
++  printf("%02x%02x,%02x%02x%02x%02x%02x%02x%02x,%02x%02x%02x%02x%02x%02x%02x\n",
++    x1[1],x1[0],
++    x0[3],x0[2],x0[1],x0[0],x3[3],x3[2],x3[1],
++    x3[0],x2[3],x2[2],x2[1],x2[0],x1[3],x1[2]);
++}
++
+ KERNEL_FQ void m01000_mxx (KERN_ATTR_RULES ())
+ {
+   /**
+@@ -56,6 +75,8 @@
+     const u32 r2 = ctx.h[DGST_R2];
+     const u32 r3 = ctx.h[DGST_R3];
+ 
++    print_hash(r0, r1, r2, r3);
++
+     COMPARE_M_SCALAR (r0, r1, r2, r3);
+   }
+ }
+@@ -112,6 +133,8 @@
+     const u32 r2 = ctx.h[DGST_R2];
+     const u32 r3 = ctx.h[DGST_R3];
+ 
++    print_hash(r0, r1, r2, r3);
++
+     COMPARE_S_SCALAR (r0, r1, r2, r3);
+   }
+ }
