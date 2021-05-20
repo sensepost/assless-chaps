@@ -9,19 +9,19 @@ It requires a hash database, instructions on how to make these are available bel
 
 # Speed
 
-Here is the comparison for three sample challenge/response's and two different wordlists, one a smaller private one, and the other the large Have I Been Pwned list. These were done on my Macbook Pro 2016 on battery. Hash 3 was deliberately placed at the end of each hash list to check for worst case performance. Hashcat is using CPU optimised cracking (because it has a faster startup time than the GPU kernel).
+Here is the comparison for three sample challenge/response's and two different wordlists, one a smaller private one, and the other the large Have I Been Pwned list. These were done on my Macbook Pro 2016 on battery. Hashcat is using CPU optimised cracking (because it has a faster startup time than the GPU kernel).
 
 *Hash1*
 
 Small hashlist:
 ```
 hashcat 1.53s user 0.16s system 25% cpu 6.699 total (3767.8 kH/s)
-assless 0.29s user 0.07s system 96% cpu 0.368 total
+assless 1.52s user 0.07s system 98% cpu 1.622 total
 ```
 HIBP hashlist:
 ```
 hashcat 308.33s user 20.61s system 361% cpu 1:31.03 total (3500.3 kH/s)
-assless 0.37s user 0.06s system 3% cpu 10.990 total
+assless 1.70s user 0.10s system 98% cpu 1.829 total
 ```
 
 *Hash 2*
@@ -29,12 +29,12 @@ assless 0.37s user 0.06s system 3% cpu 10.990 total
 Small hashlist:
 ```
 hashcat 1.66s user 0.20s system 24% cpu 7.547 total (3730.5 kH/s)
-assless 0.21s user 0.08s system 83% cpu 0.347 total
+assless 1.60s user 0.08s system 97% cpu 1.714 total
 ```
 HIBP hashlist:
 ```
 hashcat 345.96s user 23.30s system 361% cpu 1:42.21 total (3532.9 kH/s)
-assless 0.29s user 0.06s system 3% cpu 9.119 total
+assless 1.78s user 0.10s system 98% cpu 1.921 total
 ```
 
 *Hash 3*
@@ -42,12 +42,12 @@ assless 0.29s user 0.06s system 3% cpu 9.119 total
 Small hashlist:
 ```
 hashcat 3.09s user 0.25s system 48% cpu 6.834 total (3670.5 kH/s)
-assless 1.44s user 0.09s system 91% cpu 1.677 total
+assless 0.33s user 0.06s system 95% cpu 0.409 total
 ```
 HIBP hashlist:
 ```
 hashcat 643.83s user 42.46s system 377% cpu 3:01.81 total (3608.2 kH/s)
-assless 14.95s user 4.03s system 98% cpu 19.240 total
+assless 0.62s user 0.09s system 97% cpu 0.731 total
 ```
 
 # Installing
