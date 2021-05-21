@@ -138,13 +138,13 @@ You'll need to make a small code change to the mode 1000 OpenCL module to make i
 
 ## A note on disk space and file sizes
 
-The SQLite database is typically 68% larger that the CSV file used to create it. It can also take some time to create the database depending on the size of files. Prepare your filesystem requirements accordingly.
+The SQLite database is typically 65% larger that the CSV file used to create it. It can also take some time to create the database depending on the size of files. Prepare your filesystem requirements accordingly.
 
 Here is an example using the rockyou dictionary:
 
 * Base rockyou dictionary 129M
-* hashcat generated rockyou.csv 462M time taken 1m 18s
-* Resulting SQLite database rockyou.db 764M time taken for import 3m
+* hashcat generated rockyou.csv 462M
+* Resulting SQLite database rockyou.db 764M
 * BZip2 maximum compression rockyou.db.bz2 339M
 
 You could save space by converting and inserting each hash dynamically and skipping the need for the intermediary CSV file.
