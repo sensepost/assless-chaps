@@ -63,12 +63,12 @@ def find_nthash(twobytes):
   # Find all NTHashes from our hashlist that end in those two bytes
   conn = sqlite3.connect(hashlist)
   try:
-    cursor = conn.execute(f"select chunk1,chunk2 from hashes where twobytes='{twobytes.lower()}'")
+    # Search for rowid first to speed the search up
+    cursor = conn.execute(f"select rowid from hashes where twobytes='{twobytes.upper()}'")
   except sqlite3.OperationalError as e:
     print(f'[x] There is a problem with the hash DB: {e}')
     conn.close()
     return False 
-
 
   results = cursor.fetchall()
   if len(results) == 0:
@@ -79,10 +79,13 @@ def find_nthash(twobytes):
     print(f'[-] Found {len(results)} hashes ending in {twobytes.lower()}')
 
   for i, row in enumerate(results):
-    if check_hash(row[0],0):
+    # Now lookup the chunks using the rowid
+    cursor = conn.execute(f"select chunk1,chunk2 from hashes where rowid='{row[0]}'")
+    res = cursor.fetchone()
+    if check_hash(res[0],0):
       print(f'[-] Found after {i} hashes.')
-      if check_hash(row[1],8):
-        print(f'[+] Full hash: {row[0]}{row[1]}{twobytes}')
+      if check_hash(res[1],8):
+        print(f'[+] Full hash: {res[0]}{res[1]}{twobytes}')
         conn.close()
         return True
 
