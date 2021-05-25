@@ -1,0 +1,12 @@
+[package]
+name = "assless-chaps"
+version = "0.1.0"
+authors = ["singe <singe-github@singe.za.net>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+des = "0.7.0"
+sqlite = "0.26.0"
+hex = "0.4.3"
