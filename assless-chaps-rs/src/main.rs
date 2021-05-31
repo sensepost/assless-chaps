@@ -9,6 +9,8 @@ use des::cipher::{
     BlockEncrypt, NewBlockCipher,
     generic_array::GenericArray,
 };
+use std::thread;
+use std::sync::mpsc;
 
 fn expand_des_key(key: &[u8]) -> Vec<u8> {
   let mut s: Vec<u8> = vec![b'\x00'; 8];
@@ -23,16 +25,22 @@ fn expand_des_key(key: &[u8]) -> Vec<u8> {
   return s; 
 }
 
-fn check_hash(ntresponse: &[u8; 24], challenge: &[u8; 8], chunk: &[u8; 7], start: usize) 
+fn des_crypt(key: &[u8], clear: &[u8]) -> Vec<u8> {
+  let exp_key = expand_des_key(&key);
+  let cipher = Des::new_from_slice(&exp_key).unwrap();
+  println!("{}",clear.len());
+  let mut check = GenericArray::clone_from_slice(clear);
+  cipher.encrypt_block(&mut check);
+  return check.as_slice().to_vec();
+}
+
+fn check_hash(ntresponse: &Vec<u8>, challenge: &Vec<u8>, chunk: &[u8; 7], start: usize) 
   -> Result<(), ()>
 {
   let ciphertext = &ntresponse[start .. start+8];
-  let key = expand_des_key(chunk);
-  let cipher = Des::new_from_slice(&key).unwrap();
-  let mut check = GenericArray::clone_from_slice(challenge);
-  cipher.encrypt_block(&mut check);
+  let check = des_crypt(chunk,challenge);
 
-  if check.as_slice() == ciphertext {
+  if &check == ciphertext {
     println!("[+] Found hash: {:?}",chunk);
     return Ok(());
   } else {
@@ -40,55 +48,70 @@ fn check_hash(ntresponse: &[u8; 24], challenge: &[u8; 8], chunk: &[u8; 7], start
   }
 }
 
-fn brute_twobytes(ntresponse: &[u8; 24], challenge: &[u8; 8]) 
+fn brute_twobytes(ntresponse: &Vec<u8>, challenge: &Vec<u8>) 
   -> Result<[u8; 2], ()>
 {
-  let ciphertext = &ntresponse[16 .. 24];
-  for i in 0..=65535_u16 {
-    let mut candidate: Vec<u8> = Vec::with_capacity(8);
-    candidate.extend_from_slice(&i.to_be_bytes());
-    candidate.extend_from_slice(b"\x00\x00\x00\x00\x00");
-    let key = expand_des_key(&candidate);
+  let no_threads = 4;
+  let (tx, rx) = mpsc::channel();
 
-    let cipher = Des::new_from_slice(&key).unwrap();
-    let mut check = GenericArray::clone_from_slice(challenge);
-    cipher.encrypt_block(&mut check);
+  for j in 0..no_threads {
+    let tx_thread = tx.clone();
+    let ntresponse = ntresponse.clone();
+    let challenge = challenge.clone();
+    thread::spawn(move || {
+      let ciphertext = &ntresponse[16 .. 24];
+      let start: u16 = j*(65535/no_threads);
+      let end: u16 = if j != no_threads { 
+        (j+1) * (65535/no_threads)
+      } else {
+        ((j+1) * (65535/no_threads)) + 65535%no_threads
+      };
+      for i in start..=end {
+        let mut candidate: Vec<u8> = Vec::with_capacity(8);
+        candidate.extend_from_slice(&i.to_be_bytes());
+        candidate.extend_from_slice(b"\x00\x00\x00\x00\x00");
+        let check = des_crypt(&candidate,&challenge);
 
-    if check.as_slice() == ciphertext {
-      println!("[+] Found in {} tries: {:02x}",i,i);
-      return Ok(i.to_be_bytes());
+        if &check == ciphertext {
+          println!("[+] Found in {} tries: {:02x}",i,i);
+          tx_thread.send(Some(i)).unwrap();
+          break;
+        }
+        // Check if it's been found and we should kill this thread
+        // Otherwise just send a status message
+        if i%1000 == 0 { if tx_thread.send(None).is_err() { break; }; };
+      }
+      //println!("{} ended",j);
+    });
+  }
+
+  for recieved in rx {
+    if recieved != None { 
+      return Ok(recieved.unwrap().to_be_bytes());
     }
   }
   return Err(());
 }
 
-fn find_hashes(hashlist: &String, twobytes: &[u8; 2], ntresponse: &[u8; 24], challenge: &[u8; 8]) {
+fn find_hashes(hashlist: &String, twobytes: &[u8; 2], ntresponse: &Vec<u8>, challenge: &Vec<u8>) {
   let connection = sqlite::open(hashlist).unwrap();
   let mut cursor = connection
-    .prepare("select rowid from hashes where twobytes=?")
+    .prepare("select chunk1,chunk2 from hashes where twobytes=?")
     .unwrap()
     .into_cursor(); 
-
-  let mut cursor2 = connection
-    .prepare("select chunk1,chunk2 from hashes where rowid=?")
-    .unwrap()
-    .into_cursor(); 
-
   let mut i = 0;
+
   cursor.bind(&[sqlite::Value::String(hex::encode(twobytes))]).unwrap();
-  while let Some(row) = cursor.next().unwrap() {
+  while let Some(hashes) = cursor.next().unwrap() {
     i += 1;
-    cursor2.bind(&[sqlite::Value::Integer(row[0].as_integer().unwrap())]).unwrap();
-    if let Some(hashes) = cursor2.next().unwrap() {
-      //hashes[0] - chunk1, hashes[1] - chunk2
-      let chunk1 = <[u8; 7]>::from_hex(hashes[0].as_string().unwrap()).unwrap();
-      if let Ok(()) = check_hash(&ntresponse, &challenge, &chunk1, 0) {
-        println!("[-] Found after {} hashes.",i);
-        let chunk2 = <[u8; 7]>::from_hex(hashes[1].as_string().unwrap()).unwrap();
-        if let Ok(()) = check_hash(&ntresponse, &challenge, &chunk2, 8) {
-          println!("[+] Full hash: {}{}{}",hashes[0].as_string().unwrap(),hashes[1].as_string().unwrap(),hex::encode(twobytes));
-          break;
-        }
+    //hashes[0] - chunk1, hashes[1] - chunk2
+    let chunk1 = <[u8; 7]>::from_hex(hashes[0].as_string().unwrap()).unwrap();
+    if let Ok(()) = check_hash(&ntresponse, &challenge, &chunk1, 0) {
+      println!("[-] Found after {} hashes.",i);
+      let chunk2 = <[u8; 7]>::from_hex(hashes[1].as_string().unwrap()).unwrap();
+      if let Ok(()) = check_hash(&ntresponse, &challenge, &chunk2, 8) {
+        println!("[+] Full hash: {}{}{}",hashes[0].as_string().unwrap(),hashes[1].as_string().unwrap(),hex::encode(twobytes));
+        break;
       }
     }
 
@@ -97,8 +120,8 @@ fn find_hashes(hashlist: &String, twobytes: &[u8; 2], ntresponse: &[u8; 24], cha
 
 fn main() {
   let args: Vec<String> = env::args().collect();
-  let challenge = <[u8; 8]>::from_hex(&args[1]).unwrap();
-  let ntresponse = <[u8; 24]>::from_hex(&args[2]).unwrap();
+  let challenge = <Vec<u8>>::from_hex(&args[1]).unwrap();
+  let ntresponse = <Vec<u8>>::from_hex(&args[2]).unwrap();
   if let Ok(twobytes) = brute_twobytes(&ntresponse, &challenge) {
     find_hashes(&args[3], &twobytes, &ntresponse, &challenge);
   }
