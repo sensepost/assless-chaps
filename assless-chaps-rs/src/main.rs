@@ -1,5 +1,5 @@
 extern crate des;
-extern crate sqlite;
+extern crate rusqlite;
 extern crate hex;
 
 use std::env;
@@ -96,26 +96,27 @@ fn brute_twobytes(ntresponse: &Vec<u8>, challenge: &Vec<u8>)
 }
 
 fn find_hashes(hashlist: &String, twobytes: &[u8; 2], ntresponse: &Vec<u8>, challenge: &Vec<u8>) {
-  let connection = sqlite::open(hashlist).unwrap();
-  let mut cursor = connection
-    .prepare("select chunk1,chunk2 from hashes where twobytes=?")
-    .unwrap()
-    .into_cursor(); 
+  let connection = rusqlite::Connection::open(hashlist).unwrap();
+  let mut stmt = connection
+    .prepare("select chunk1,chunk2 from hashes where twobytes=(?)").unwrap();
   let mut i = 0;
   let mut found = false;
 
-  cursor.bind(&[sqlite::Value::String(hex::encode(twobytes))]).unwrap();
-  while let Some(hashes) = cursor.next().unwrap() {
+  let mut rows = stmt.query([hex::encode(twobytes)]).unwrap();
+  
+  while let Some(hashes) = rows.next().unwrap() {
     i += 1;
     //hashes[0] - chunk1, hashes[1] - chunk2
-    let chunk1 = <[u8; 7]>::from_hex(hashes[0].as_string().unwrap()).unwrap();
+    let hsh0: String = hashes.get(0).unwrap();
+    let chunk1 = <[u8; 7]>::from_hex(&hsh0).unwrap();
     if let Ok(()) = check_hash(&ntresponse, &challenge, &chunk1, 0) {
       println!("[-] Found after {} hashes.",i);
-      let chunk2 = <[u8; 7]>::from_hex(hashes[1].as_string().unwrap()).unwrap();
+      let hsh1: String = hashes.get(1).unwrap();
+      let chunk2 = <[u8; 7]>::from_hex(&hsh1).unwrap();
       if let Ok(()) = check_hash(&ntresponse, &challenge, &chunk2, 8) {
         println!("[+] Full hash: {}{}{}",
-          hashes[0].as_string().unwrap(),
-          hashes[1].as_string().unwrap(),
+          &hsh0,
+          &hsh1,
           hex::encode(twobytes)
         );
         found = true;

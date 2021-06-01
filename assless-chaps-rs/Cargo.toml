@@ -8,5 +8,5 @@ edition = "2018"
 
 [dependencies]
 des = "0.7.0"
-sqlite = "0.26.0"
+rusqlite = "0.25.3"
 hex = "0.4.3"
