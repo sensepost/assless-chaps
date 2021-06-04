@@ -7,61 +7,101 @@ Assless CHAPs is an efficient way to recover the NT hash used in a MSCHAPv2 exch
 
 It requires a hash database, instructions on how to make these are available below.
 
+# Technique
+
+MSCHAPv2 splits the NThash into three parts, and uses each part as different keys to DES encrypt the same challenge (derived from the peer and authenticator challenges). The NTHash is split into two 7-byte keys, and one 2-byte key. This means the last key is padded with NULLs to make a key of the required length. This can be rapidly brute forced due to the efficiency of DES operation and a keyspace of 65 335. Once we have those two bytes, we can look up all NThashes in our database, that end in those two bytes. This provides a much smaller set of possible hashes to check.
+
+This is a form of rainbow table attack.
+
 # Speed
 
-Here is the comparison for three sample challenge/response's and two different wordlists, one a smaller private one, and the other the large Have I Been Pwned list. These were done on my Macbook Pro 2016 on battery. Hashcat is using CPU optimised cracking (because it has a faster startup time than the GPU kernel).
+Here is the comparison for three sample challenge/response's and three different wordlists, a small private one, rockyou, and the Have I Been Pwned list. These were done on my Macbook Pro 2016. Hashcat is using [this](https://github.com/hashcat/hashcat/pull/2607) hash schucking kernel and the two builtin GPUs and a pure rather than optimised kernel (as the latter doesn't exist yet). Hash3 isn't in the lists to simulate worst case performance. I'm not including the time hashcat takes to build the dictionary cache on first run.
 
 *Hash1*
 
 Small hashlist:
 ```
-hashcat 1.53s user 0.16s system 25% cpu 6.699 total (3767.8 kH/s)
-assless 1.52s user 0.07s system 98% cpu 1.622 total
+hashcat 0.50s user 0.27s system 55% cpu 1.405 total (8597.8 kH/s)
+assless 0.05s user 0.00s system 294% cpu 0.018 total
+```
+Rockyou hashlist:
+```
+hashcat 2.67s user 0.51s system 93% cpu 3.413 total
+assless 0.05s user 0.01s system 281% cpu 0.021 total
 ```
 HIBP hashlist:
 ```
-hashcat 308.33s user 20.61s system 361% cpu 1:31.03 total (3500.3 kH/s)
-assless 1.70s user 0.10s system 98% cpu 1.829 total
+hashcat 59.97s user 11.72s system 136% cpu 52.603 total (5620.6 kH/s)
+assless 0.05s user 0.00s system 292% cpu 0.018 total
 ```
 
 *Hash 2*
 
 Small hashlist:
 ```
-hashcat 1.66s user 0.20s system 24% cpu 7.547 total (3730.5 kH/s)
-assless 1.60s user 0.08s system 97% cpu 1.714 total
+hashcat 0.51s user 0.27s system 55% cpu 1.409 total (8704.7 kH/s)
+assless 0.03s user 0.00s system 248% cpu 0.012 total
+```
+Rockyou hashlist:
+```
+hashcat 2.20s user 0.46s system 110% cpu 2.409 total (5798.4 kH/s)
+assless 0.03s user 0.00s system 231% cpu 0.015 total
 ```
 HIBP hashlist:
 ```
-hashcat 345.96s user 23.30s system 361% cpu 1:42.21 total (3532.9 kH/s)
-assless 1.78s user 0.10s system 98% cpu 1.921 total
+hashcat 65.37s user 12.74s system 135% cpu 57.712 total (5768.7 kH/s)
+assless 0.03s user 0.00s system 249% cpu 0.013 total
 ```
 
 *Hash 3*
 
+Hash 3 doesn't exist in any of the hashlists to simulate a worst case lookup performance.
+
 Small hashlist:
 ```
-hashcat 3.09s user 0.25s system 48% cpu 6.834 total (3670.5 kH/s)
-assless 0.33s user 0.06s system 95% cpu 0.409 total
+hashcat 0.67s user 0.34s system 66% cpu 1.526 total (7550.1 kH/s)
+assless 0.02s user 0.00s system 211% cpu 0.012 total
+```
+Rockyou hashlist:
+```
+hashcat 2.71s user 0.52s system 94% cpu 3.415 total (5685.4 kH/s)
+assless 0.02s user 0.01s system 181% cpu 0.014 total
 ```
 HIBP hashlist:
 ```
-hashcat 643.83s user 42.46s system 377% cpu 3:01.81 total (3608.2 kH/s)
-assless 0.62s user 0.09s system 97% cpu 0.731 total
+hashcat 125.19s user 27.62s system 139% cpu 1:49.75 total (5634.9 kH/s)
+assless 0.06s user 0.03s system 115% cpu 0.075 total
 ```
 
 # Installing
 
-Assless requires `python3`, `sqlite3` and `pycryptodome`. While Python has sqlite3 as part of the standard library, the command line utility is required for database creation.
+The rust version will require SQLite 3.6.8 or newer.
 
-# Using
+The python version requires `python3`, `sqlite3` and `pycryptodome`.
 
-Assless requires the challnge, response and database of NThashes. Optionally, it can use the bundled optimised two byte lookup file. The simplest usage looks like this:
+The database creation utility requires python3 and the sqlite3 CLI.
 
+# Compiling
+
+This only applies to the rust version. You'll need [cargo](https://doc.rust-lang.org/cargo/).
+
+With cargo installed, merely change to the assless-chaps-rs directory, and build it with:
+`cargo build --release`
+
+The resulting binary will be in the `target/release/` directory.
+
+# Usage
+
+Assless requires the challenge, response and database of NThashes. Optionally, the python version can use the bundled optimised two byte lookup file. The simplest usage looks like this:
+
+`./assless-chaps <Challenge> <Response> <hashes.db>`
+or
 `python3 assless-chaps.py <Challenge> <Response> <hashes.db>`
 
 For example:
 
+`./assless-chaps 5d79b2a85966d347 556fdda5f67d2b746ca3315fd8b93adcab5c792790a92e87 rockyou.db`
+or
 `python3 assless-chaps.py 5d79b2a85966d347 556fdda5f67d2b746ca3315fd8b93adcab5c792790a92e87 rockyou.db`
 
 The output should look like:
@@ -78,7 +118,7 @@ The output should look like:
 
 The final full hash `8846f7eaee8fb117ad06bdd830b7586c` is the NT hash for `password`.
 
-## Two bytes lookup
+## Two bytes lookup - Python only for now
 
 I spent some time building a list of all 65 535 possible two byte values sorted by most prevalent across a large corpus of passwords. This file is includes as `twobytes`. You can just pass it as the fourth argument to assless.
 
@@ -138,13 +178,13 @@ You'll need to make a small code change to the mode 1000 OpenCL module to make i
 
 ## A note on disk space and file sizes
 
-The SQLite database is typically 65% larger that the CSV file used to create it. It can also take some time to create the database depending on the size of files. Prepare your filesystem requirements accordingly.
+The SQLite database is typically 61% larger that the CSV file used to create it. It can also take some time to create the database depending on the size of files. Prepare your filesystem requirements accordingly.
 
 Here is an example using the rockyou dictionary:
 
 * Base rockyou dictionary 129M
 * hashcat generated rockyou.csv 462M
-* Resulting SQLite database rockyou.db 764M
+* Resulting SQLite database rockyou.db 746M
 * BZip2 maximum compression rockyou.db.bz2 339M
 
 You could save space by converting and inserting each hash dynamically and skipping the need for the intermediary CSV file.
