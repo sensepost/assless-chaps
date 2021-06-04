@@ -95,7 +95,9 @@ The resulting binary will be in the `target/release/` directory.
 Assless requires the challenge, response and database of NThashes. Optionally, the python version can use the bundled optimised two byte lookup file. The simplest usage looks like this:
 
 `./assless-chaps <Challenge> <Response> <hashes.db>`
+
 or
+
 `python3 assless-chaps.py <Challenge> <Response> <hashes.db>`
 
 For example:
