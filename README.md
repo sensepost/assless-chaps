@@ -9,9 +9,11 @@ It requires a hash database, instructions on how to make these are available bel
 
 # Technique
 
-MSCHAPv2 splits the NThash into three parts, and uses each part as different keys to DES encrypt the same challenge (derived from the peer and authenticator challenges). The NTHash is split into two 7-byte keys, and one 2-byte key. This means the last key is padded with NULLs to make a key of the required length. This can be rapidly brute forced due to the efficiency of DES operation and a keyspace of 65 335. Once we have those two bytes, we can look up all NThashes in our database, that end in those two bytes. This provides a much smaller set of possible hashes to check.
+An MSCHAPv2 exchange does not require the clear-text password to be "cracked", rather we merely need the NThash used.
 
-This is a form of rainbow table attack.
+MSCHAPv2 splits the NThash into three parts, and uses each part as different keys to DES encrypt the same challenge (derived from the peer and authenticator challenges). The NTHash is split into two 7-byte keys, and one 2-byte key. This means the last key is padded with NULLs to make a key of the required length. This can be rapidly brute forced due to the efficiency of DES operation and a keyspace of 65 535. Once we have those two bytes, we can look up all NThashes in our database, that end in those two bytes. This provides a much smaller set of possible hashes to check.
+
+This is a form of space vs time tradeoff, similar to a rainbow table. It's also a form of [hash shucking](https://www.scottbrady91.com/Authentication/Beware-of-Password-Shucking).
 
 # Speed
 
