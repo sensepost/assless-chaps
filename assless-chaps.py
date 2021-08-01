@@ -48,14 +48,14 @@ def lookup_twobytes(i):
 def brute_twobytes(i):
   # Brute force last two bytes of the NTHash
   ciphertext = NTResponse[16:24]
-  for i in range(i,65535):
-    candidate = i.to_bytes(2,'big')+b'\x00\x00\x00\x00\x00'
+  for j in range(i,65535):
+    candidate = j.to_bytes(2,'big')+b'\x00\x00\x00\x00\x00'
     des = DES.new(__expand_DES_key(candidate),DES.MODE_ECB)
     check = des.encrypt(Challenge)
     if check == ciphertext:
-      twobytes = i.to_bytes(2,"big").hex()
-      print(f'[+] Found in {i} tries: {twobytes}')
-      return (i,twobytes)
+      twobytes = j.to_bytes(2,"big").hex()
+      print(f'[+] Found in {j} tries: {twobytes}')
+      return (j,twobytes)
   print('[x] Two byte search exhausted - hash not found in hashlist')
   return (-1,b'')
 
