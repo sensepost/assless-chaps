@@ -14,7 +14,7 @@ with sqlite3.connect(argv[1]) as db:
     chunk1 TEXT NOT NULL COLLATE NOCASE,\
     chunk2 TEXT NOT NULL COLLATE NOCASE);\
   ')
-  #cur.execute('CREATE INDEX IF NOT EXISTS tb ON hashes (twobytes);')
+  cur.execute('DROP INDEX IF EXISTS tb;')
 
 print('[-] Starting import, this can take a long time if the CSV is large')
 
