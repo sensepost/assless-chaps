@@ -1,9 +1,9 @@
 # assless-chaps
-Crack MSCHAPv2 challenge/responses quickly using a database of NT hashes
+Crack MSCHAPv2/NTLMv1 challenge/responses quickly using a database of NT hashes
 
 # Introduction
 
-Assless CHAPs is an efficient way to recover the NT hash used in a MSCHAPv2 exchange if you have the challenge and response (e.g. from a WiFi EAP WPE attack).
+Assless CHAPs is an efficient way to recover the NT hash used in a MSCHAPv2/NTLMv1 exchange if you have the challenge and response (e.g. from a WiFi EAP WPE attack).
 
 It requires a database of NT hashes, instructions on how to make these  from existing lists or using hashcat with wordlists and rules are available below. I've included a sample database from [SecLists](https://github.com/danielmiessler/SecLists/blob/master/Passwords/Common-Credentials/10-million-password-list-top-1000000.txt). You'll need to bunzip it.
 
@@ -196,3 +196,25 @@ Here is an example using the rockyou dictionary:
 * BZip2 maximum compression rockyou.db.bz2 339M
 
 You could save space by converting and inserting each hash dynamically and skipping the need for the intermediary CSV file.
+
+# NTLMv1 SSP
+
+NTLMv1 will work in exactly the same way, unless it's using SSP. You'll know if SSP is in use if you get an LM response that ends in a bunch of zeros. You can use the included `ntlm-ssp.py` to produce the server challenge that assless will need.
+
+Run it like this:
+`python3 ntlm-ssp.py <lm response> <challenge>`
+
+For example if we use the example NTLMv1-SSP challenge response from the [hashcat example hashes](https://hashcat.net/wiki/doku.php?id=example_hashes):
+`u4-netntlm::kNS:338d08f8e26de93300000000000000000000000000000000:9526fb8c23a90751cdd619b6cea564742e1e4bf33006ba41:cb8086049ec4736c`
+
+You would pass in the LM and challenge like so:
+
+`python3 ntlm-ssp.py 338d08f8e26de93300000000000000000000000000000000 cb8086049ec4736c`
+
+And get the following response:
+
+`The server challenge is: 724edf24aea0d68b`
+
+Which can then be cracked with assless-chaps like normal:
+
+`./assless-chaps 724edf24aea0d68b 9526fb8c23a90751cdd619b6cea564742e1e4bf33006ba41 hashes.db`
