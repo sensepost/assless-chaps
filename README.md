@@ -15,6 +15,10 @@ MSCHAPv2 splits the NThash into three parts, and uses each part as different key
 
 This is a form of space vs time tradeoff, similar to a rainbow table. It's also a form of [hash shucking](https://www.scottbrady91.com/Authentication/Beware-of-Password-Shucking).
 
+# Presentation
+
+This was first presented at Defcon 29's RF Hacking Village. The slides are included in this repository.
+
 # Speed
 
 Here is the comparison for three sample challenge/response's and three different wordlists, a small private one, rockyou, and the Have I Been Pwned list. These were done on my Macbook Pro 2016. Hashcat is using [this](https://github.com/hashcat/hashcat/pull/2607) hash schucking kernel and the two builtin GPUs and a pure rather than optimised kernel (as the latter doesn't exist yet). Hash3 isn't in the lists to simulate worst case performance. I'm not including the time hashcat takes to build the dictionary cache on first run.
