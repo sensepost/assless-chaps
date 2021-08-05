@@ -17,7 +17,7 @@ This is a form of space vs time tradeoff, similar to a rainbow table. It's also 
 
 # Presentation
 
-This was first presented at Defcon 29's RF Hacking Village. The slides are included in this repository.
+This was first presented at [Defcon 29's RF Hacking Village](https://www.youtube.com/watch?v=lm7Cuktpnb4). The slides are included in this repository.
 
 # Speed
 
