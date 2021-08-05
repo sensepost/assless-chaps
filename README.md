@@ -5,7 +5,7 @@ Crack MSCHAPv2 challenge/responses quickly using a database of NT hashes
 
 Assless CHAPs is an efficient way to recover the NT hash used in a MSCHAPv2 exchange if you have the challenge and response (e.g. from a WiFi EAP WPE attack).
 
-It requires a hash database, instructions on how to make these are available below.
+It requires a database of NT hashes, instructions on how to make these  from existing lists or using hashcat with wordlists and rules are available below. I've included a sample database from [SecLists](https://github.com/danielmiessler/SecLists/blob/master/Passwords/Common-Credentials/10-million-password-list-top-1000000.txt). You'll need to bunzip it.
 
 # Technique
 
@@ -162,21 +162,21 @@ You can either take an existing list of hashes (such as the [Have I Been Pwned l
 
 ## Using Have I Been Pwned
 
-The HIBP password lists are already downloadable as NT Hashes, one just needs to remove the count file and convert them to CSV format so they can be imported into the database.
+The HIBP password lists are already downloadable as NT Hashes, one just needs to remove the count form the file and convert them to CSV format to be imported into the database.
 
-This can be done using the standard Unix utility `sed`:
+This can be done using the standard Unix utility `sed` like so:
 
 `sed "s/^\(.\{14\}\)\(.\{14\}\)\(.\{4\}\):.*/\3,\1,\2/ pwned-passwords-ntlm-ordered-by-hash.txt" > hibp.csv`
 
-After which it can be imported using `mksqlitedb.py`.
+After which it can be imported using `mksqlitedb.py hibp.db hibp.xsc`.
 
-## Using hashcat
+## Using hashcat to create a hash csv file from wordlists and rules
 
 You'll need to make a small code change to the mode 1000 OpenCL module to make it spit out every hash, rather than only those matching your crack candidate. By default, it will generate the hash in the right CSV format required.
 
 * Change to your hashcat `OpenCL` directory: `cd hashcat/OpenCL`
 * Apply the patch: `patch < m01000_a0-pure.cl.patch`
-* Prepare a file with an impossible to crack NT hash like `11111111111111111111111111111111`
+* Prepare a file with an impossible to crack NT hash like `echo 11111111111111111111111111111111 > impossible_hash`
 * Crack as normal, but disable your potfile and redirect the output to a file: `hashcat -m1000 impossible_hash rockyou.txt -r best64.rule --potfile-disable --quiet > rockyou.csv`
 * Create your hashes database: `python3 mksqlitedb.py rockyou.db rockyou.csv`
 
