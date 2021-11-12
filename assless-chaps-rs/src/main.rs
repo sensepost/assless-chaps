@@ -11,6 +11,7 @@ use des::cipher::{
 };
 use std::thread;
 use std::sync::mpsc;
+use std::process::exit;
 
 fn expand_des_key(key: &[u8]) -> Vec<u8> {
   let mut s: Vec<u8> = vec![b'\x00'; 8];
@@ -129,8 +130,16 @@ fn find_hashes(hashlist: &String, twobytes: &[u8; 2], ntresponse: &Vec<u8>, chal
   }
 }
 
+fn usage() {
+  println!("Usage: ./assless-chaps <Challenge> <Response> <hashes.db>");
+  println!("By @singe from @sensepost");
+  println!("https://github.com/sensepost/assless-chaps");
+  exit(1);
+}
+
 fn main() {
   let args: Vec<String> = env::args().collect();
+  if args.len() < 3 { usage(); }
   let challenge = <Vec<u8>>::from_hex(&args[1]).unwrap();
   let ntresponse = <Vec<u8>>::from_hex(&args[2]).unwrap();
   if let Ok(twobytes) = brute_twobytes(&ntresponse, &challenge) {
