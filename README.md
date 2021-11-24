@@ -102,15 +102,9 @@ Assless requires the challenge, response and database of NThashes. Optionally, t
 
 `./assless-chaps <Challenge> <Response> <hashes.db>`
 
-or
-
-`python3 assless-chaps.py <Challenge> <Response> <hashes.db>`
-
 For example:
 
 `./assless-chaps 5d79b2a85966d347 556fdda5f67d2b746ca3315fd8b93adcab5c792790a92e87 rockyou.db`
-or
-`python3 assless-chaps.py 5d79b2a85966d347 556fdda5f67d2b746ca3315fd8b93adcab5c792790a92e87 rockyou.db`
 
 The output should look like:
 
@@ -126,7 +120,7 @@ The output should look like:
 
 The final full hash `8846f7eaee8fb117ad06bdd830b7586c` is the NT hash for `password`.
 
-## Two bytes lookup - Python only for now
+## Two bytes lookup - Python only
 
 I spent some time building a list of all 65 535 possible two byte values sorted by most prevalent across a large corpus of passwords. This file is includes as `twobytes`. You can just pass it as the fourth argument to assless.
 
@@ -166,13 +160,23 @@ You can either take an existing list of hashes (such as the [Have I Been Pwned l
 
 ## Using Have I Been Pwned
 
-The HIBP password lists are already downloadable as NT Hashes, one just needs to remove the count form the file and convert them to CSV format to be imported into the database.
+The HIBP password lists are already downloadable as NT Hashes, one just needs to remove the count from the file and convert them to CSV format to be imported into the database.
 
 This can be done using the standard Unix utility `sed` like so:
 
 `sed "s/^\(.\{14\}\)\(.\{14\}\)\(.\{4\}\):.*/\3,\1,\2/ pwned-passwords-ntlm-ordered-by-hash.txt" > hibp.csv`
 
-After which it can be imported using `mksqlitedb.py hibp.db hibp.xsc`.
+After which it can be imported using `mksqlitedb.py hibp.db hibp.csv`.
+
+## Converting a wordlist to a hashlist
+
+To convert a straight wordlist to a hashlist of nthashes, you can use [nthasher](https://github.com/singe/nthasher) which can do large wordlists fast. The resulting hashes will need to be turned into the required CSV format as described above.
+
+A much slower nthasher that will output the hashes direct to the required CSV format is included in this repository, and is quite simply run with:
+
+`python3 nthash-from-clear.py <wordlist> > hashlist.csv`
+
+If you want to expand the wordlist with rules see the next section on using hashcat.
 
 ## Using hashcat to create a hash csv file from wordlists and rules
 
