@@ -3,12 +3,9 @@ extern crate rusqlite;
 extern crate hex;
 
 use std::env;
-use hex::{FromHex};
+use hex::FromHex;
 use des::Des;
-use des::cipher::{
-    BlockEncrypt, NewBlockCipher,
-    generic_array::GenericArray,
-};
+use des::cipher::{generic_array::GenericArray, BlockEncrypt};
 use std::thread;
 use std::sync::mpsc;
 use std::process::exit;
@@ -23,32 +20,32 @@ fn expand_des_key(key: &[u8]) -> Vec<u8> {
   s[5] = ((key[4] & 0x1f) << 2 | ((key[5] >> 6) & 0x03)) << 1;
   s[6] = ((key[5] & 0x3f) << 1 | ((key[6] >> 7) & 0x01)) << 1;
   s[7] = (key[6] & 0x7f) << 1;
-  return s; 
+  s
 }
 
 fn des_crypt(key: &[u8], clear: &[u8]) -> Vec<u8> {
-  let exp_key = expand_des_key(&key);
-  let cipher = Des::new_from_slice(&exp_key).unwrap();
+  let exp_key = expand_des_key(key);
+  let cipher: Des = des::cipher::KeyInit::new_from_slice(&exp_key).unwrap();
   let mut check = GenericArray::clone_from_slice(clear);
   cipher.encrypt_block(&mut check);
   return check.as_slice().to_vec();
 }
 
-fn check_hash(ntresponse: &Vec<u8>, challenge: &Vec<u8>, chunk: &[u8; 7], start: usize) 
+fn check_hash(ntresponse: &[u8], challenge: &[u8], chunk: &[u8; 7], start: usize) 
   -> Result<(), ()>
 {
   let ciphertext = &ntresponse[start .. start+8];
   let check = des_crypt(chunk,challenge);
 
-  if &check == ciphertext {
+  if check == ciphertext {
     println!("[+] Found hash: {}",hex::encode(chunk));
-    return Ok(());
+    Ok(())
   } else {
-    return Err(());
+    Err(())
   }
 }
 
-fn brute_twobytes(ntresponse: &Vec<u8>, challenge: &Vec<u8>) 
+fn brute_twobytes(ntresponse: &[u8], challenge: &[u8]) 
   -> Result<[u8; 2], ()>
 {
   let no_threads = 4;
@@ -56,8 +53,8 @@ fn brute_twobytes(ntresponse: &Vec<u8>, challenge: &Vec<u8>)
 
   for j in 0..no_threads {
     let tx_thread = tx.clone();
-    let ntresponse = ntresponse.clone();
-    let challenge = challenge.clone();
+    let ntresponse = ntresponse.to_owned();
+    let challenge = challenge.to_owned();
     thread::spawn(move || {
       let ciphertext = &ntresponse[16 .. 24];
       let start: u16 = j*(65535/no_threads);
@@ -73,7 +70,7 @@ fn brute_twobytes(ntresponse: &Vec<u8>, challenge: &Vec<u8>)
         candidate.extend_from_slice(b"\x00\x00\x00\x00\x00");
         let check = des_crypt(&candidate,&challenge);
 
-        if &check == ciphertext {
+        if check == ciphertext {
           println!("[+] Found in {} tries: {:02x}",i,i);
           // Victory send our result & break the loop
           tx_thread.send(Some(i)).unwrap();
@@ -82,21 +79,19 @@ fn brute_twobytes(ntresponse: &Vec<u8>, challenge: &Vec<u8>)
         // Check if it's been found and we should kill this thread
         // Otherwise just send a status message
         // Limit how often we do it since it's expensive
-        if i%100 == 0 { if tx_thread.send(None).is_err() { break; }; };
+        if i%100 == 0 && tx_thread.send(None).is_err() { break; };
       }
     });
   }
 
   // Wait for our successful result
-  for recieved in rx {
-    if recieved != None { 
-      return Ok(recieved.unwrap().to_be_bytes());
-    }
+  if let Some(received) = rx.into_iter().flatten().next() {
+    return Ok(received.to_be_bytes());
   }
-  return Err(());
+  Err(())
 }
 
-fn find_hashes(hashlist: &String, twobytes: &[u8; 2], ntresponse: &Vec<u8>, challenge: &Vec<u8>) {
+fn find_hashes(hashlist: &String, twobytes: &[u8; 2], ntresponse: &[u8], challenge: &[u8]) {
   let connection = rusqlite::Connection::open(hashlist).unwrap();
   let mut stmt = connection
     .prepare("select chunk1,chunk2 from hashes where twobytes=(?)").unwrap();
@@ -110,11 +105,11 @@ fn find_hashes(hashlist: &String, twobytes: &[u8; 2], ntresponse: &Vec<u8>, chal
     //hashes[0] - chunk1, hashes[1] - chunk2
     let hsh0: String = hashes.get(0).unwrap();
     let chunk1 = <[u8; 7]>::from_hex(&hsh0).unwrap();
-    if let Ok(()) = check_hash(&ntresponse, &challenge, &chunk1, 0) {
+    if let Ok(()) = check_hash(ntresponse, challenge, &chunk1, 0) {
       println!("[-] Found after {} hashes.",i);
       let hsh1: String = hashes.get(1).unwrap();
       let chunk2 = <[u8; 7]>::from_hex(&hsh1).unwrap();
-      if let Ok(()) = check_hash(&ntresponse, &challenge, &chunk2, 8) {
+      if let Ok(()) = check_hash(ntresponse, challenge, &chunk2, 8) {
         println!("[+] Full hash: {}{}{}",
           &hsh0,
           &hsh1,
