@@ -16,5 +16,24 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Build
-      run: cargo build --verbose
+    - name: Test Build
+      run: |
+      cd assless-chaps-rs
+      cargo build --verbose
+      cd ..
+      
+    - name: Release Build
+      run: |
+      cd assless-chaps-rs
+      cargo clean
+      cargo build --release
+      cd ..
+
+    - uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "latest"
+        prerelease: true
+        title: "Development Build"
+        files: |
+          assless-chaps-rs/target/release/assless-chaps
