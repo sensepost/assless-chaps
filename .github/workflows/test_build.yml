@@ -26,10 +26,9 @@ jobs:
       run: cargo build --release
 
     - uses: "marvinpinto/action-automatic-releases@latest"
-      working-directory: ./assless-chaps-rs
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         automatic_release_tag: "latest"
         prerelease: true
         title: "Development Build"
-        files: target/release/assless-chaps
+        files: ./assless-chaps-rs/target/release/assless-chaps
