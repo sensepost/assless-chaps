@@ -5,10 +5,7 @@ extern crate hex;
 use std::env;
 use hex::{FromHex};
 use des::Des;
-use des::cipher::{
-    BlockEncrypt, NewBlockCipher,
-    generic_array::GenericArray,
-};
+use des::cipher::{BlockEncrypt, generic_array::GenericArray, KeyInit};
 use std::thread;
 use std::sync::mpsc;
 use std::process::exit;
