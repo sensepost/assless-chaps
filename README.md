@@ -164,7 +164,7 @@ The HIBP password lists are already downloadable as NT Hashes, one just needs to
 
 This can be done using the standard Unix utility `sed` like so:
 
-`sed "s/^\(.\{14\}\)\(.\{14\}\)\(.\{4\}\):.*/\3,\1,\2/ pwned-passwords-ntlm-ordered-by-hash.txt" > hibp.csv`
+`sed "s/^\(.\{14\}\)\(.\{14\}\)\(.\{4\}\):.*/\3,\1,\2/" pwned-passwords-ntlm-ordered-by-hash.txt > hibp.csv`
 
 After which it can be imported using `mksqlitedb.py hibp.db hibp.csv`.
 
